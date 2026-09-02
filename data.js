@@ -75,7 +75,7 @@ const ACERVO = [
     autor: "Robert Louis Stevenson",
     preco: 15.00,
     estado: "excelente",
-    vendido: false,
+    vendido: true,
     imagem: "img/o-medico-e-o-monstro.jpg",
     descricao: "Edição em capa dura, com acabamento metalizado no título. Praticamente sem marcas.",
     tags: ["clássico", "terror", "capa dura"]
@@ -192,7 +192,7 @@ const ACERVO = [
     editora: "Penguin-Companhia",
     preco: 10.00,
     estado: "excelente",
-    vendido: false,
+    vendido: true,
     imagem: "img/memorias-do-subsolo.jpg",
     descricao: "Edição Penguin Clássicos. Capa firme, sem vincos na lombada.",
     tags: ["clássico", "literatura russa", "filosofia"]
