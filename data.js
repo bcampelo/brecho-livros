@@ -205,7 +205,7 @@ const ACERVO = [
     editora: "Sextante",
     preco: 20.00,
     estado: "excelente",
-    vendido: true,
+    vendido: false,
     imagem: "img/a-arte-de-fazer-acontecer.jpg",
     descricao: "O método GTD (Getting Things Done). Exemplar praticamente novo.",
     tags: ["produtividade", "negócios", "autoajuda"]
