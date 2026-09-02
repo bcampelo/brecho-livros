@@ -205,7 +205,7 @@ const ACERVO = [
     editora: "Sextante",
     preco: 20.00,
     estado: "excelente",
-    vendido: false,
+    vendido: true,
     imagem: "img/a-arte-de-fazer-acontecer.jpg",
     descricao: "O método GTD (Getting Things Done). Exemplar praticamente novo.",
     tags: ["produtividade", "negócios", "autoajuda"]
@@ -216,7 +216,7 @@ const ACERVO = [
     titulo: "Otelo",
     autor: "William Shakespeare",
     editora: "Camelot",
-    preco: 10.00,
+    preco: 15.00,
     estado: "bom",
     vendido: false,
     imagem: "img/otelo.jpg",
