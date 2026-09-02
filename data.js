@@ -56,7 +56,7 @@ const ACERVO = [
    
     precoConjunto: 85.00,
     estado: "bom",
-    vendido: false,
+    vendido: true,
     imagem: "img/box-crepusculo.jpg",
     descricao: "Os 4 volumes da saga, edição Intrínseca. Capas com marcas de manuseio e leve desgaste nas quinas; miolo íntegro.",
     vendeAvulso: false,
@@ -218,7 +218,7 @@ const ACERVO = [
     editora: "Camelot",
     preco: 15.00,
     estado: "bom",
-    vendido: false,
+    vendido: true,
     imagem: "img/otelo.jpg",
     descricao: "Edição com capa branca e detalhes dourados. Pequena marca no canto superior da capa.",
     tags: ["clássico", "teatro"]
