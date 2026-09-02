@@ -99,7 +99,7 @@ const ACERVO = [
     titulo: "God of War II",
     autor: "Robert E. Vardeman",
     editora: "LeYa",
-    preco: 10.00,
+    preco: 20.00,
     estado: "bom",
     vendido: false,
     imagem: "img/god-of-war-2.jpg",
