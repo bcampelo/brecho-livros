@@ -53,9 +53,8 @@ const ACERVO = [
     titulo: "Box Crepúsculo — Saga Completa",
     autor: "Stephenie Meyer",
     editora: "Intrínseca",
-    // ⚠️⚠️ ATENÇÃO: você não informou o preço do box na conversa do WhatsApp.
-    // O valor abaixo é PROVISÓRIO. Troque pelo preço real antes de divulgar o link.
-    precoConjunto: 100.00,
+   
+    precoConjunto: 80.00,
     estado: "bom",
     vendido: false,
     imagem: "img/box-crepusculo.jpg",
