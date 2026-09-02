@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brechó de Livros</title>
+  <meta name="description" content="Vitrine de livros usados, com carinho, a preço de amigo.">
+  <meta name="theme-color" content="#0B0B0D">
+  
+  <!-- SEO e Compartilhamento (Open Graph) -->
+  <meta property="og:title" content="Brechó de Livros">
+  <meta property="og:description" content="Vitrine pessoal de livros usados.">
+  <!-- Troque a imagem abaixo em img/capa-vitrine.jpg para mudar a prévia no WhatsApp/Instagram -->
+  <meta property="og:image" content="img/capa-vitrine.jpg">
+  
+  <!-- Favicon em SVG inline -->
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F4F4F5'><path d='M4 4c0-1.1.9-2 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4zm2 0v16h12V4H6zm2 2h8v2H8V6zm0 4h8v2H8v-2z'/></svg>">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Cabeçalho Principal -->
+  <header class="header">
+    <div class="header-content">
+      <div>
+        <h1 id="ui-title">Brechó de Livros</h1>
+        <p id="ui-subtitle" class="subtitle">Carregando...</p>
+        <p id="ui-stats" class="stats">0 livros · 0 boxes disponíveis</p>
+      </div>
+      <a id="ui-btn-geral" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M17.47 4.53A8.96 8.96 0 0 0 12 2C6.48 2 2 6.48 2 12c0 1.76.46 3.42 1.3 4.9L2 22l5.24-1.28A8.96 8.96 0 0 0 12 22c5.52 0 10-4.48 10-10 0-2.67-1.04-5.18-2.53-7.47zm-5.47 15.9c-1.46 0-2.88-.38-4.14-1.1l-.3-.2-3.07.75.82-2.98-.22-.32A7.44 7.44 0 0 1 3.5 12c0-4.69 3.81-8.5 8.5-8.5 2.27 0 4.41.88 6.01 2.49A8.46 8.46 0 0 1 20.5 12c0 4.69-3.81 8.5-8.5 8.5z"/>
+        </svg>
+        Falar no WhatsApp
+      </a>
+    </div>
+  </header>
+
+  <!-- Barra de Filtros Sticky -->
+  <div class="filters-bar">
+    <div class="filters-container">
+      
+      <div class="filter-group search-group">
+        <svg class="icon-search" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="filter-search" placeholder="Buscar por título ou autor...">
+        <button id="btn-clear-search" class="btn-icon" aria-label="Limpar busca" style="display:none;">×</button>
+      </div>
+
+      <div class="filter-group scrollable">
+        <fieldset class="chips-group">
+          <legend class="sr-only">Tipo</legend>
+          <label class="chip"><input type="radio" name="tipo" value="tudo" checked> Tudo</label>
+          <label class="chip"><input type="radio" name="tipo" value="livro"> Livros</label>
+          <label class="chip"><input type="radio" name="tipo" value="box"> Boxes</label>
+        </fieldset>
+      </div>
+
+      <div class="filter-group scrollable">
+        <fieldset class="chips-group" id="chips-estado">
+          <legend class="sr-only">Estado</legend>
+          <!-- Chips de estado gerados dinamicamente via JS -->
+        </fieldset>
+      </div>
+
+      <div class="filter-group">
+        <select id="filter-preco" aria-label="Faixa de preço">
+          <option value="todos">Qualquer preço</option>
+          <option value="ate20">Até R$ 20</option>
+          <option value="20a50">R$ 20 a R$ 50</option>
+          <option value="50a100">R$ 50 a R$ 100</option>
+          <option value="acima100">Acima de R$ 100</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <select id="filter-ordem" aria-label="Ordenação">
+          <option value="padrao">Padrão</option>
+          <option value="menor-preco">Menor preço</option>
+          <option value="maior-preco">Maior preço</option>
+          <option value="az">Título (A–Z)</option>
+        </select>
+      </div>
+
+      <div class="filter-group toggle-group">
+        <label class="toggle">
+          <input type="checkbox" id="filter-vendidos" checked>
+          <span class="slider"></span>
+        </label>
+        <label for="filter-vendidos">Ocultar vendidos</label>
+      </div>
+
+      <button id="btn-limpar-filtros" class="btn-text" style="display: none;">Limpar filtros</button>
+    </div>
+    
+    <div class="results-counter" aria-live="polite">
+      <span id="ui-contador">Carregando itens...</span>
+    </div>
+  </div>
+
+  <!-- Grade de Produtos -->
+  <main class="vitrine-container">
+    <div id="grid-vitrine" class="vitrine-grid">
+      <!-- Cards injetados via JavaScript -->
+    </div>
+    
+    <div id="empty-state" class="empty-state" style="display:none;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="var(--texto-fraco)"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <h2>Nenhum livro encontrado</h2>
+      <p>Tente outra busca ou limpe os filtros.</p>
+      <button id="btn-limpar-empty" class="btn btn-secondary">Limpar filtros</button>
+    </div>
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="footer">
+    <p id="ui-rodape-aviso">Combinamos entrega ou envio pelo WhatsApp.</p>
+    <a id="ui-rodape-wa" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-large">
+      Falar no WhatsApp
+    </a>
+    <p class="footer-note">Vitrine pessoal · fotos reais dos exemplares</p>
+  </footer>
+
+  <!-- Modal de Detalhes -->
+  <div id="modal-backdrop" class="modal-backdrop" aria-hidden="true">
+    <div id="modal-dialog" class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+      <button id="modal-close" class="modal-close" aria-label="Fechar">×</button>
+      
+      <div class="modal-content">
+        <div class="modal-image-container">
+          <img id="modal-img" src="" alt="Capa do item" loading="lazy" decoding="async">
+          <div id="modal-badge-tipo" class="badge-tipo"></div>
+        </div>
+        
+        <div class="modal-info">
+          <div class="modal-header">
+            <h2 id="modal-title">Título do Livro</h2>
+            <p id="modal-author" class="modal-author">Autor</p>
+          </div>
+          
+          <div class="modal-estado-box" id="modal-estado-box">
+            <span id="modal-estado-badge" class="badge-estado">Estado</span>
+            <p id="modal-estado-desc" class="modal-estado-desc">Descrição do estado.</p>
+          </div>
+          
+          <div class="modal-price-area">
+            <div id="modal-price" class="modal-price">R$ 0,00</div>
+            <p id="modal-price-sub" class="modal-price-sub"></p>
+          </div>
+          
+          <div class="modal-tech-specs" id="modal-specs">
+            <!-- Ficha técnica gerada via JS -->
+          </div>
+          
+          <div class="modal-description" id="modal-desc">
+            <!-- Descrição livre -->
+          </div>
+          
+          <div class="modal-tags" id="modal-tags">
+            <!-- Chips de tags -->
+          </div>
+          
+          <div class="modal-actions" id="modal-main-action">
+            <!-- Botão principal do WhatsApp -->
+          </div>
+
+          <div class="modal-box-items" id="modal-box-items" style="display:none;">
+            <div class="divider">Livros deste conjunto (<span id="modal-box-count">0</span>)</div>
+            <p id="modal-box-note" class="box-note" style="display:none;">Este box é vendido apenas completo.</p>
+            <div id="modal-box-list" class="box-list">
+              <!-- Lista de volumes do box gerada via JS -->
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

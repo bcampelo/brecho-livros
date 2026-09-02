@@ -1,0 +1,482 @@
+/**
+ * Lógica da Landing Page de Brechó
+ */
+
+// Placeholder SVG em data URI para imagens ausentes ou quebradas
+const SVG_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="100%" height="100%" fill="%231C1C21"/><path d="M120 160h60v80h-60z" fill="%2326262B"/><text x="150" y="210" fill="%2371717A" font-family="sans-serif" font-size="16" text-anchor="middle" dominant-baseline="middle">Sem foto</text></svg>`;
+
+// Estado da Aplicação
+const state = {
+  search: "",
+  tipo: "tudo", // tudo, livro, box
+  estados: [], // array de estados selecionados
+  preco: "todos", // todos, ate20, 20a50, 50a100, acima100
+  ordem: "padrao",
+  ocultarVendidos: true
+};
+
+// ============================================================================
+// INICIALIZAÇÃO
+// ============================================================================
+document.addEventListener("DOMContentLoaded", () => {
+  preencherConfiguracoesUI();
+  gerarChipsEstado();
+  configurarEventosFiltros();
+  updateGrid();
+});
+
+function preencherConfiguracoesUI() {
+  document.title = CONFIG.nomeDaVitrine;
+  document.getElementById("ui-title").textContent = CONFIG.nomeDaVitrine;
+  document.getElementById("ui-subtitle").textContent = CONFIG.subtitulo;
+  document.getElementById("ui-rodape-aviso").textContent = CONFIG.avisoRodape;
+  
+  const linkGeral = linkWhatsApp(CONFIG.mensagemGeral);
+  document.getElementById("ui-btn-geral").href = linkGeral;
+  document.getElementById("ui-rodape-wa").href = linkGeral;
+}
+
+function gerarChipsEstado() {
+  const container = document.getElementById("chips-estado");
+  let html = `<label class="chip"><input type="checkbox" value="todos" checked> Todos</label>`;
+  
+  for (const [key, obj] of Object.entries(ESTADOS)) {
+    html += `<label class="chip" data-estado="${key}"><input type="checkbox" value="${key}"> ${obj.rotulo}</label>`;
+  }
+  container.innerHTML = html;
+
+  // Comportamento dos checkboxes de estado (exclusividade do "Todos")
+  const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === "todos" && e.target.checked) {
+        checkboxes.forEach(c => { if(c.value !== "todos") c.checked = false; });
+      } else if (val !== "todos" && e.target.checked) {
+        container.querySelector('input[value="todos"]').checked = false;
+      }
+      
+      // Atualizar cores visuais dos chips
+      container.querySelectorAll('.chip').forEach(chip => {
+        const est = chip.getAttribute('data-estado');
+        if (est && chip.querySelector('input').checked) {
+          chip.style.borderColor = ESTADOS[est].cor;
+          chip.style.color = '#FFF';
+          chip.style.backgroundColor = `${ESTADOS[est].cor}22`;
+        } else {
+          chip.style.borderColor = '';
+          chip.style.color = '';
+          chip.style.backgroundColor = '';
+        }
+      });
+      
+      // Checar se zerou tudo
+      const checkeds = Array.from(checkboxes).filter(c => c.checked);
+      if (checkeds.length === 0) container.querySelector('input[value="todos"]').checked = true;
+
+      // Atualizar estado
+      state.estados = Array.from(checkboxes).filter(c => c.checked && c.value !== "todos").map(c => c.value);
+      updateGrid();
+    });
+  });
+}
+
+// ============================================================================
+// FILTROS E ORDENAÇÃO
+// ============================================================================
+function configurarEventosFiltros() {
+  // Busca
+  const inputBusca = document.getElementById("filter-search");
+  const btnClear = document.getElementById("btn-clear-search");
+  let debounceTimeout;
+
+  inputBusca.addEventListener("input", (e) => {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      state.search = e.target.value;
+      btnClear.style.display = state.search ? "block" : "none";
+      updateGrid();
+    }, 200);
+  });
+
+  btnClear.addEventListener("click", () => {
+    inputBusca.value = "";
+    state.search = "";
+    btnClear.style.display = "none";
+    updateGrid();
+  });
+
+  // Tipo (Radios)
+  document.querySelectorAll('input[name="tipo"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      state.tipo = e.target.value;
+      updateGrid();
+    });
+  });
+
+  // Preço e Ordem
+  document.getElementById("filter-preco").addEventListener('change', e => { state.preco = e.target.value; updateGrid(); });
+  document.getElementById("filter-ordem").addEventListener('change', e => { state.ordem = e.target.value; updateGrid(); });
+  
+  // Vendidos
+  document.getElementById("filter-vendidos").addEventListener('change', e => { state.ocultarVendidos = e.target.checked; updateGrid(); });
+
+  // Limpar Todos
+  const btnLimpar = document.getElementById("btn-limpar-filtros");
+  const btnLimparEmpty = document.getElementById("btn-limpar-empty");
+  const limparTudo = () => {
+    inputBusca.value = ""; state.search = ""; btnClear.style.display = "none";
+    document.querySelector('input[name="tipo"][value="tudo"]').checked = true; state.tipo = "tudo";
+    document.querySelector('#chips-estado input[value="todos"]').click(); // Aciona evento pra resetar
+    document.getElementById("filter-preco").value = "todos"; state.preco = "todos";
+    document.getElementById("filter-ordem").value = "padrao"; state.ordem = "padrao";
+    document.getElementById("filter-vendidos").checked = true; state.ocultarVendidos = true;
+    updateGrid();
+  };
+  btnLimpar.addEventListener("click", limparTudo);
+  btnLimparEmpty.addEventListener("click", limparTudo);
+}
+
+function normalizeString(str) {
+  if (!str) return "";
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function itemMatchesFilters(item) {
+  // Vendido
+  if (state.ocultarVendidos && item.vendido) return false;
+  
+  // Tipo
+  if (state.tipo !== "tudo" && item.tipo !== state.tipo) return false;
+  
+  // Estado
+  if (state.estados.length > 0) {
+    if (!state.estados.includes(item.estado)) return false;
+  }
+  
+  // Preço
+  const precoBase = item.tipo === "box" ? item.precoConjunto : item.preco;
+  if (state.preco !== "todos") {
+    if (state.preco === "ate20" && precoBase > 20) return false;
+    if (state.preco === "20a50" && (precoBase <= 20 || precoBase > 50)) return false;
+    if (state.preco === "50a100" && (precoBase <= 50 || precoBase > 100)) return false;
+    if (state.preco === "acima100" && precoBase <= 100) return false;
+  }
+  
+  // Busca
+  if (state.search.trim()) {
+    const q = normalizeString(state.search);
+    const searchArea = [
+      item.titulo,
+      item.autor,
+      ...(item.tags || []),
+      ...(item.itens ? item.itens.map(i => i.titulo) : [])
+    ].map(normalizeString).join(" ");
+    
+    if (!searchArea.includes(q)) return false;
+  }
+  
+  return true;
+}
+
+// ============================================================================
+// RENDERIZAÇÃO
+// ============================================================================
+function formatCurrency(val) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
+
+function getPrecoAvulso(box) {
+  if (!box.vendeAvulso || !box.itens) return null;
+  const disponiveis = box.itens.filter(i => !i.vendido);
+  if (disponiveis.length === 0) return null;
+  const menor = Math.min(...disponiveis.map(i => i.preco || Infinity));
+  return menor !== Infinity ? menor : null;
+}
+
+function imgErrorHandler(img) {
+  img.onerror = null;
+  img.src = SVG_PLACEHOLDER;
+}
+
+function updateGrid() {
+  const grid = document.getElementById("grid-vitrine");
+  const emptyState = document.getElementById("empty-state");
+  const btnLimpar = document.getElementById("btn-limpar-filtros");
+  const contador = document.getElementById("ui-contador");
+  
+  // Filtrar
+  let resultados = ACERVO.filter(itemMatchesFilters);
+  
+  // Ordenar
+  if (state.ordem === "menor-preco") {
+    resultados.sort((a, b) => (a.tipo === "box" ? a.precoConjunto : a.preco) - (b.tipo === "box" ? b.precoConjunto : b.preco));
+  } else if (state.ordem === "maior-preco") {
+    resultados.sort((a, b) => (b.tipo === "box" ? b.precoConjunto : b.preco) - (a.tipo === "box" ? a.precoConjunto : a.preco));
+  } else if (state.ordem === "az") {
+    resultados.sort((a, b) => a.titulo.localeCompare(b.titulo));
+  }
+
+  // Visibilidade Limpar Filtros
+  const temFiltroAtivo = state.search || state.tipo !== "tudo" || state.estados.length > 0 || state.preco !== "todos" || state.ordem !== "padrao" || !state.ocultarVendidos;
+  btnLimpar.style.display = temFiltroAtivo ? "inline-block" : "none";
+
+  // Contador
+  contador.textContent = `${resultados.length} ite${resultados.length === 1 ? 'm' : 'ns'} encontrado${resultados.length === 1 ? '' : 's'}`;
+  
+  // Atualizar Stats do Topo (apenas uma vez na verdade, mas deixamos dinâmico caso ACERVO mude)
+  const qtdLivros = ACERVO.filter(i => i.tipo === "livro" && !i.vendido).length;
+  const qtdBoxes = ACERVO.filter(i => i.tipo === "box" && !i.vendido).length;
+  const partes = [];
+  if (qtdLivros) partes.push(`${qtdLivros} ${qtdLivros === 1 ? "livro avulso" : "livros avulsos"}`);
+  if (qtdBoxes) partes.push(`${qtdBoxes} ${qtdBoxes === 1 ? "box" : "boxes"}`);
+  document.getElementById("ui-stats").textContent = partes.length
+    ? "Disponíveis: " + partes.join(" · ")
+    : "Tudo vendido por enquanto";
+
+  grid.innerHTML = "";
+  if (resultados.length === 0) {
+    grid.style.display = "none";
+    emptyState.style.display = "block";
+    return;
+  }
+
+  grid.style.display = "grid";
+  emptyState.style.display = "none";
+
+  resultados.forEach(item => {
+    const card = document.createElement("article");
+    card.className = `card ${item.vendido ? "vendido" : ""}`;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.dataset.id = item.id;
+    
+    // Tratamento de clique e teclado
+    card.addEventListener("click", () => openModal(item));
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(item); }});
+
+    const estadoObj = ESTADOS[item.estado] || ESTADOS["bom"];
+    const imgSrc = item.imagem || SVG_PLACEHOLDER;
+    
+    let html = `
+      <div class="card-img-wrapper">
+        <img src="${imgSrc}" alt="Capa de ${item.titulo}" loading="lazy" decoding="async">
+        ${item.vendido ? '<div class="selo-vendido">VENDIDO</div>' : ''}
+        ${item.tipo === "box" ? `<div class="badge-tipo">📚 BOX · ${item.itens ? item.itens.length : 0} livros</div>` : ''}
+        <div class="badge-estado" style="color: ${estadoObj.cor}; border-color: ${estadoObj.cor};">${estadoObj.rotulo}</div>
+      </div>
+      <div class="card-content">
+        <h3 class="card-title">${item.titulo}</h3>
+        <p class="card-author">${item.autor}</p>
+        <div class="card-price-area">
+    `;
+
+    if (item.tipo === "livro") {
+      html += `<div class="card-price">${formatCurrency(item.preco)}</div>`;
+    } else {
+      html += `<div class="card-price">${formatCurrency(item.precoConjunto)}</div>`;
+      if (item.vendeAvulso) {
+        const menorAvulso = getPrecoAvulso(item);
+        if (menorAvulso) {
+          html += `<div class="card-price-sub">box completo · avulso a partir de ${formatCurrency(menorAvulso)}</div>`;
+        } else {
+          html += `<div class="card-price-sub">box completo</div>`;
+        }
+      } else {
+        html += `<div class="card-price-sub">box completo</div>`;
+      }
+    }
+
+    html += `</div></div>`;
+    card.innerHTML = html;
+    // O placeholder é um data:URI com aspas, então o onerror é ligado aqui e não no HTML.
+    const cardImg = card.querySelector("img");
+    if (cardImg) cardImg.onerror = function () { imgErrorHandler(this); };
+    grid.appendChild(card);
+  });
+}
+
+// ============================================================================
+// WHATSAPP LINK BUILDER
+// ============================================================================
+function linkWhatsApp(mensagem) {
+  return `https://wa.me/${CONFIG.telefoneWhatsApp}?text=${encodeURIComponent(mensagem)}`;
+}
+
+// ============================================================================
+// MODAL
+// ============================================================================
+let elementoFocoAnterior = null;
+
+function openModal(item) {
+  elementoFocoAnterior = document.activeElement;
+  
+  const backdrop = document.getElementById("modal-backdrop");
+  const dialog = document.getElementById("modal-dialog");
+  
+  // Preencher dados básicos
+  document.getElementById("modal-img").src = item.imagem || SVG_PLACEHOLDER;
+  document.getElementById("modal-img").onerror = function() { imgErrorHandler(this); };
+  
+  const badgeTipo = document.getElementById("modal-badge-tipo");
+  if (item.tipo === "box") {
+    badgeTipo.style.display = "block";
+    badgeTipo.textContent = `📚 BOX · ${item.itens ? item.itens.length : 0} livros`;
+  } else {
+    badgeTipo.style.display = "none";
+  }
+
+  document.getElementById("modal-title").textContent = item.titulo;
+  document.getElementById("modal-author").textContent = item.autor;
+  
+  // Estado geral
+  const estadoObj = ESTADOS[item.estado] || ESTADOS["bom"];
+  const badgeEstado = document.getElementById("modal-estado-badge");
+  badgeEstado.textContent = estadoObj.rotulo;
+  badgeEstado.style.color = estadoObj.cor;
+  badgeEstado.style.borderColor = estadoObj.cor;
+  document.getElementById("modal-estado-desc").textContent = estadoObj.descricao;
+
+  // Preços e Botão Principal
+  const priceArea = document.getElementById("modal-price");
+  const priceSub = document.getElementById("modal-price-sub");
+  const actionArea = document.getElementById("modal-main-action");
+  
+  let precoValor = item.tipo === "box" ? item.precoConjunto : item.preco;
+  priceArea.textContent = formatCurrency(precoValor);
+  
+  if (item.tipo === "box") {
+    priceSub.textContent = "Preço do box completo";
+  } else {
+    priceSub.textContent = "";
+  }
+
+  // Ações Principais
+  actionArea.innerHTML = "";
+  if (item.vendido) {
+    actionArea.innerHTML = `<button class="btn btn-large" disabled>Já vendido</button>`;
+  } else {
+    const msgTemplate = item.tipo === "box" ? CONFIG.mensagemBox : CONFIG.mensagemLivro;
+    const msg = msgTemplate.replace("{titulo}", item.titulo);
+    const textoBtn = item.tipo === "box" ? "Quero o box completo" : "Tenho interesse";
+    actionArea.innerHTML = `<a href="${linkWhatsApp(msg)}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-large">${textoBtn}</a>`;
+  }
+
+  // Specs
+  const specsDiv = document.getElementById("modal-specs");
+  specsDiv.innerHTML = "";
+  if (item.editora || item.ano || item.paginas) {
+    specsDiv.style.display = "grid";
+    if (item.editora) specsDiv.innerHTML += `<div class="spec-item"><span>Editora</span><strong>${item.editora}</strong></div>`;
+    if (item.ano) specsDiv.innerHTML += `<div class="spec-item"><span>Ano</span><strong>${item.ano}</strong></div>`;
+    if (item.paginas) specsDiv.innerHTML += `<div class="spec-item"><span>Páginas</span><strong>${item.paginas}</strong></div>`;
+  } else {
+    specsDiv.style.display = "none";
+  }
+
+  // Descrição
+  const descDiv = document.getElementById("modal-desc");
+  if (item.descricao) {
+    descDiv.style.display = "block";
+    descDiv.textContent = item.descricao;
+  } else {
+    descDiv.style.display = "none";
+  }
+
+  // Tags
+  const tagsDiv = document.getElementById("modal-tags");
+  tagsDiv.innerHTML = "";
+  if (item.tags && item.tags.length > 0) {
+    item.tags.forEach(tag => {
+      tagsDiv.innerHTML += `<span class="tag">${tag}</span>`;
+    });
+  }
+
+  // Box itens
+  const boxArea = document.getElementById("modal-box-items");
+  if (item.tipo === "box" && item.itens) {
+    boxArea.style.display = "block";
+    document.getElementById("modal-box-count").textContent = item.itens.length;
+    
+    const note = document.getElementById("modal-box-note");
+    note.style.display = item.vendeAvulso ? "none" : "block";
+
+    const listDiv = document.getElementById("modal-box-list");
+    listDiv.innerHTML = "";
+    
+    item.itens.forEach(vol => {
+      const volEst = ESTADOS[vol.estado] || ESTADOS["bom"];
+      const vImg = vol.imagem || SVG_PLACEHOLDER;
+      
+      let vHtml = `<div class="box-item-row ${vol.vendido ? 'vendido-row' : ''}">
+        <img src="${vImg}" class="box-item-img" alt="Capa de ${vol.titulo}" loading="lazy">
+        <div class="box-item-info">
+          <div class="box-item-title">${vol.titulo}</div>
+          <div class="box-item-meta">${vol.ano || ''} ${vol.ano && vol.paginas ? '·' : ''} ${vol.paginas ? vol.paginas+'p' : ''}</div>
+          <div class="badge-estado-inline" style="color: ${volEst.cor}; border-color: ${volEst.cor};">${volEst.rotulo}</div>
+        </div>`;
+      
+      if (item.vendeAvulso) {
+        vHtml += `<div class="box-item-action">`;
+        if (vol.preco) vHtml += `<div class="box-item-price">${formatCurrency(vol.preco)}</div>`;
+        if (vol.vendido) {
+           vHtml += `<button class="btn-small-outline" disabled style="border-color:var(--borda);color:var(--texto-fraco)">Vendido</button>`;
+        } else {
+           const vMsg = CONFIG.mensagemLivro.replace("{titulo}", `${vol.titulo} (do ${item.titulo})`);
+           vHtml += `<a href="${linkWhatsApp(vMsg)}" target="_blank" class="btn-small-outline">Só este</a>`;
+        }
+        vHtml += `</div>`;
+      }
+      
+      vHtml += `</div>`;
+      listDiv.innerHTML += vHtml;
+    });
+
+    // Mesmo motivo do card: o onerror é ligado aqui, depois que o HTML foi montado.
+    listDiv.querySelectorAll(".box-item-img").forEach(im => {
+      im.onerror = function () { imgErrorHandler(this); };
+    });
+  } else {
+    boxArea.style.display = "none";
+  }
+
+  // Mostrar
+  document.body.style.overflow = "hidden";
+  backdrop.classList.add("open");
+  
+  // Focus Trap Init
+  setTimeout(() => { document.getElementById("modal-close").focus(); }, 100);
+}
+
+function closeModal() {
+  const backdrop = document.getElementById("modal-backdrop");
+  backdrop.classList.remove("open");
+  document.body.style.overflow = "";
+  if (elementoFocoAnterior) elementoFocoAnterior.focus();
+}
+
+// Eventos do Modal
+document.getElementById("modal-close").addEventListener("click", closeModal);
+document.getElementById("modal-backdrop").addEventListener("click", (e) => {
+  if (e.target.id === "modal-backdrop") closeModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (!document.getElementById("modal-backdrop").classList.contains("open")) return;
+  if (e.key === "Escape") {
+    closeModal();
+    return;
+  }
+  
+  // Focus Trap
+  if (e.key === "Tab") {
+    const focusable = document.getElementById("modal-dialog").querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]:not([tabindex="-1"])');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    
+    if (e.shiftKey) {
+      if (document.activeElement === first) { last.focus(); e.preventDefault(); }
+    } else {
+      if (document.activeElement === last) { first.focus(); e.preventDefault(); }
+    }
+  }
+});
