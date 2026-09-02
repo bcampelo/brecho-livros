@@ -426,7 +426,7 @@ const ACERVO = [
     editora: "Intrínseca",
     preco: 15.00,
     estado: "bom",
-    vendido: false,
+    vendido: true,
     imagem: "img/a-hospedeira.jpg",
     descricao: "Da autora da série Crepúsculo. Alguns riscos leves no brilho da capa.",
     tags: ["ficção científica", "romance", "young adult"]
