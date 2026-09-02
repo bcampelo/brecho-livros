@@ -153,7 +153,7 @@ const ACERVO = [
     editora: "Nova Fronteira",
     preco: 20.00,
     estado: "excelente",
-    vendido: false,
+    vendido: true,
     imagem: "img/1984.jpg",
     descricao: "Edição Nova Fronteira com capa rosa. Conservado, sem dobras na lombada.",
     tags: ["clássico", "distopia", "ficção científica"]
