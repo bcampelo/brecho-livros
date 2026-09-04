@@ -210,7 +210,7 @@ const ACERVO = [
     editora: "Paz e Terra",
     preco: 20.00,
     estado: "bom",
-    vendido: false,
+    vendido: true,
     adicionadoEm: "2026-09-04",
     imagem: "img/as-veias-abertas-da-america-latina.jpg",
     descricao: "Edição com prefácio de Isabel Allende. Capa clara com marcas de manuseio.",
