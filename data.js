@@ -76,7 +76,7 @@ const ACERVO = [
     titulo: "Box A Divina Comédia de Dante",
     autor: "Dante Alighieri",
     editora: "Principis",
-    precoConjunto: 60.00,
+    precoConjunto: 50.00,
     estado: "excelente",
     vendido: false,
     adicionadoEm: "2026-09-04",
