@@ -19,6 +19,11 @@
  * O nome do arquivo deve ser exatamente o que está preenchido no campo "imagem".
  * Recomendação: use imagens na proporção 3:4 (ex: 600x800 pixels).
  *
+ * RECÉM-CHEGADOS (campo opcional "adicionadoEm"):
+ * Escreva a data de entrada no formato "ano-mes-dia", ex: adicionadoEm: "2026-09-20".
+ * Isso habilita a ordenação "Recém-chegados" e faz o selo NOVO aparecer no card
+ * por 21 dias. Livros sem esse campo funcionam normal, só nunca ganham o selo.
+ *
  * VENDIDOS:
  * Mude "vendido: false" para "vendido: true" quando o item for vendido.
  *
@@ -29,7 +34,6 @@
  * livre para reescrever qualquer uma.
  * ----------------------------------------------------------------------------
  */
-
 const CONFIG = {
   nomeDaVitrine: "Brechó de Livros",
   subtitulo: "Livros usados, com carinho, a preço de amigo",
@@ -39,13 +43,11 @@ const CONFIG = {
   mensagemGeral: "Olá, vi sua vitrine de livros e queria saber mais",
   avisoRodape: "Combinamos entrega ou envio pelo WhatsApp."
 };
-
 const ESTADOS = {
   "desgastado": { rotulo: "Desgastado", cor: "#F87171", descricao: "Tem marcas claras de uso: capa amassada ou riscada, bordas amareladas, possíveis dobras, anotações ou grifos. Íntegro e totalmente legível." },
   "bom": { rotulo: "Bom", cor: "#FBBF24", descricao: "Usado, porém bem conservado: pequenos sinais de manuseio, sem páginas soltas, rasgos ou anotações relevantes." },
   "excelente": { rotulo: "Excelente", cor: "#34D399", descricao: "Praticamente como novo: sem marcas relevantes, parece pouco ou nunca lido." }
 };
-
 const ACERVO = [
   {
     id: "box-crepusculo",
@@ -53,7 +55,7 @@ const ACERVO = [
     titulo: "Box Crepúsculo — Saga Completa",
     autor: "Stephenie Meyer",
     editora: "Intrínseca",
-   
+
     precoConjunto: 85.00,
     estado: "bom",
     vendido: true,
@@ -67,6 +69,222 @@ const ACERVO = [
       { titulo: "3 — Eclipse", estado: "bom", vendido: false, imagem: "img/box-crepusculo-3.jpg" },
       { titulo: "4 — Amanhecer", estado: "bom", vendido: false, imagem: "img/box-crepusculo-4.jpg" }
     ]
+  },
+  {
+    id: "box-divina-comedia",
+    tipo: "box",
+    titulo: "Box A Divina Comédia de Dante",
+    autor: "Dante Alighieri",
+    editora: "Principis",
+    precoConjunto: 60.00,
+    estado: "excelente",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/box-divina-comedia.jpg",
+    descricao: "Os três volumes na luva original da Principis, tradução de José Pedro Xavier Pinheiro. Capas em ótimo estado; a luva tem uma marca pequena na lateral.",
+    vendeAvulso: false,
+    tags: ["clássico", "poesia", "literatura italiana"],
+    itens: [
+      { titulo: "1 — Inferno", estado: "excelente", vendido: false, imagem: "img/box-divina-comedia-1.jpg" },
+      { titulo: "2 — Purgatório", estado: "excelente", vendido: false, imagem: "img/box-divina-comedia-2.jpg" },
+      { titulo: "3 — Paraíso", estado: "excelente", vendido: false, imagem: "img/box-divina-comedia-3.jpg" }
+    ]
+  },
+  {
+    id: "um-homem-de-sorte",
+    tipo: "livro",
+    titulo: "Um Homem de Sorte",
+    autor: "Nicholas Sparks",
+    editora: "Novo Conceito",
+    preco: 20.00,
+    estado: "desgastado",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/um-homem-de-sorte.jpg",
+    descricao: "Capa clara bem amarelada nas bordas e com marcas visíveis de manuseio. Miolo íntegro.",
+    tags: ["romance", "drama"]
+  },
+  {
+    id: "um-porto-seguro",
+    tipo: "livro",
+    titulo: "Um Porto Seguro",
+    autor: "Nicholas Sparks",
+    editora: "Novo Conceito",
+    preco: 20.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/um-porto-seguro.jpg",
+    descricao: "Edição com a capa do filme. Leves marcas de uso nas bordas.",
+    tags: ["romance", "drama"]
+  },
+  {
+    id: "o-sol-e-para-todos",
+    tipo: "livro",
+    titulo: "O Sol é para Todos",
+    autor: "Harper Lee",
+    editora: "José Olympio",
+    preco: 25.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/o-sol-e-para-todos.jpg",
+    descricao: "Prêmio Pulitzer de literatura. Capa laranja com pequenos pontos de desgaste nas quinas.",
+    tags: ["clássico", "drama", "vestibular"]
+  },
+  {
+    id: "quando-fui-morto-em-cuba",
+    tipo: "livro",
+    titulo: "Quando Fui Morto em Cuba",
+    autor: "Roberto Drummond",
+    editora: "Ática",
+    preco: 10.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/quando-fui-morto-em-cuba.jpg",
+    descricao: "2ª edição. Capa dourada com o amarelado natural da idade da edição.",
+    tags: ["literatura brasileira", "contos"]
+  },
+  {
+    id: "auto-da-compadecida",
+    tipo: "livro",
+    titulo: "Auto da Compadecida",
+    autor: "Ariano Suassuna",
+    editora: "Nova Fronteira",
+    preco: 15.00,
+    estado: "excelente",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/auto-da-compadecida.jpg",
+    descricao: "Capa branca bem conservada, sem dobras na lombada.",
+    tags: ["clássico", "teatro", "literatura brasileira", "vestibular"]
+  },
+  {
+    id: "o-peso-do-silencio",
+    tipo: "livro",
+    titulo: "O Peso do Silêncio",
+    autor: "Heather Gudenkauf",
+    editora: "Harlequin",
+    preco: 15.00,
+    estado: "excelente",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/o-peso-do-silencio.jpg",
+    descricao: "Exemplar praticamente sem marcas.",
+    tags: ["romance", "suspense"]
+  },
+  {
+    id: "suas-verdades",
+    tipo: "livro",
+    titulo: "Suas Verdades — O Tempo Não Apaga",
+    autor: "Américo Simões",
+    editora: "Barbara",
+    preco: 15.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/suas-verdades.jpg",
+    descricao: "Capa com leve amarelado nas bordas. Leitura perfeitamente íntegra.",
+    tags: ["romance", "drama"]
+  },
+  {
+    id: "diarios-do-vampiro-a-furia",
+    tipo: "livro",
+    titulo: "Diários do Vampiro: A Fúria",
+    autor: "L. J. Smith",
+    editora: "Galera",
+    preco: 15.00,
+    estado: "excelente",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/diarios-do-vampiro-a-furia.jpg",
+    descricao: "Livro 3 da série que deu origem a Vampire Diaries. Bem conservado.",
+    tags: ["vampiros", "young adult", "fantasia"]
+  },
+  {
+    id: "as-veias-abertas-da-america-latina",
+    tipo: "livro",
+    titulo: "As Veias Abertas da América Latina",
+    autor: "Eduardo Galeano",
+    editora: "Paz e Terra",
+    preco: 20.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/as-veias-abertas-da-america-latina.jpg",
+    descricao: "Edição com prefácio de Isabel Allende. Capa clara com marcas de manuseio.",
+    tags: ["história", "política", "ensaio"]
+  },
+  {
+    id: "quincas-borba",
+    tipo: "livro",
+    titulo: "Quincas Borba",
+    autor: "Machado de Assis",
+    editora: "Maralto",
+    preco: 20.00,
+    estado: "excelente",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/quincas-borba.jpg",
+    descricao: "Edição com posfácio de Joselia Aguiar. Praticamente novo.",
+    tags: ["clássico", "literatura brasileira", "vestibular"]
+  },
+  {
+    id: "diarios-do-vampiro-o-confronto",
+    tipo: "livro",
+    titulo: "Diários do Vampiro: O Confronto",
+    autor: "L. J. Smith",
+    editora: "Galera",
+    preco: 15.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/diarios-do-vampiro-o-confronto.jpg",
+    descricao: "Livro 2 da série. Capa com riscos leves no brilho.",
+    tags: ["vampiros", "young adult", "fantasia"]
+  },
+  {
+    id: "a-mao-esquerda-de-deus",
+    tipo: "livro",
+    titulo: "A Mão Esquerda de Deus",
+    autor: "Paul Hoffman",
+    editora: "Suma de Letras",
+    preco: 20.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/a-mao-esquerda-de-deus.jpg",
+    descricao: "Bordas da capa com leve desgaste de leitura.",
+    tags: ["fantasia", "aventura"]
+  },
+  {
+    id: "a-escolha",
+    tipo: "livro",
+    titulo: "A Escolha",
+    autor: "Nicholas Sparks",
+    editora: "Novo Conceito",
+    preco: 15.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/a-escolha.jpg",
+    descricao: "Pequenas marcas de manuseio na capa, lombada firme.",
+    tags: ["romance", "drama"]
+  },
+  {
+    id: "o-recurso",
+    tipo: "livro",
+    titulo: "O Recurso",
+    autor: "John Grisham",
+    editora: "Rocco",
+    preco: 15.00,
+    estado: "bom",
+    vendido: false,
+    adicionadoEm: "2026-09-04",
+    imagem: "img/o-recurso.jpg",
+    descricao: "Capa dura preta com título em dourado. Leves marcas de uso nas quinas.",
+    tags: ["suspense", "thriller", "capa dura"]
   },
   {
     id: "o-medico-e-o-monstro",
@@ -114,7 +332,7 @@ const ACERVO = [
     editora: "Principis",
     preco: 15.00,
     estado: "bom",
-    vendido: false,
+    vendido: true,
     imagem: "img/a-revolucao-dos-bichos.jpg",
     descricao: "Edição Principis, capa rosa. Pequenos sinais de manuseio nas bordas.",
     tags: ["clássico", "distopia", "sátira"]
