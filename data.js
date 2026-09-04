@@ -78,7 +78,7 @@ const ACERVO = [
     editora: "Principis",
     precoConjunto: 50.00,
     estado: "excelente",
-    vendido: false,
+    vendido: true,
     adicionadoEm: "2026-09-04",
     imagem: "img/box-divina-comedia.jpg",
     descricao: "Os três volumes na luva original da Principis, tradução de José Pedro Xavier Pinheiro. Capas em ótimo estado; a luva tem uma marca pequena na lateral.",
