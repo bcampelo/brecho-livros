@@ -313,3 +313,91 @@ select {
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+/* ==========================================================================
+   ADIÇÕES: fade das fotos, entrada dos cards, selo NOVO,
+   seleção de vários itens e botão de copiar link.
+   ========================================================================== */
+
+/* --- Fade da foto conforme ela carrega ---------------------------------- */
+.card-img-wrapper img { transition: transform 300ms ease, opacity 450ms ease; }
+.card-img-wrapper img.com-fade { opacity: 0; }
+.card-img-wrapper img.com-fade.carregada { opacity: 1; }
+
+/* --- Entrada escalonada dos cards (só no primeiro carregamento) ---------- */
+@keyframes card-entra {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.card.entrando {
+  animation: card-entra 420ms cubic-bezier(.16, 1, .3, 1) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+/* --- Selo NOVO (fica abaixo do selo de estado, no canto superior direito) - */
+.badge-novo {
+  position: absolute; top: 40px; right: 8px; z-index: 2;
+  background: var(--destaque); color: #17140C;
+  padding: 3px 8px; border-radius: 12px;
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em;
+}
+
+/* --- Botão de selecionar item (canto superior esquerdo da foto) ---------- */
+.btn-selecionar {
+  position: absolute; top: 8px; left: 8px; z-index: 3;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #FFF; font-size: 1.1rem; line-height: 1; font-weight: 600;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.btn-selecionar:hover { background: rgba(0, 0, 0, 0.85); border-color: var(--whatsapp); }
+.btn-selecionar:active { transform: scale(0.9); }
+.card.selecionado .btn-selecionar {
+  background: var(--whatsapp); border-color: var(--whatsapp); color: #06301A;
+}
+.card.selecionado { border-color: var(--whatsapp); }
+.card.selecionado::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border-radius: var(--raio); box-shadow: inset 0 0 0 2px var(--whatsapp);
+}
+
+/* --- Barra de seleção fixa no rodapé ------------------------------------ */
+.sel-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px max(16px, calc((100vw - 1200px) / 2));
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: rgba(20, 20, 23, 0.93); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--borda-forte);
+  transform: translateY(110%); opacity: 0; visibility: hidden;
+  transition: transform 260ms cubic-bezier(.16, 1, .3, 1), opacity 200ms ease, visibility 260ms;
+}
+.sel-bar.ativa { transform: none; opacity: 1; visibility: visible; }
+.sel-info { display: flex; flex-direction: column; line-height: 1.25; margin-right: auto; }
+.sel-info strong { font-size: 0.9rem; font-weight: 600; }
+.sel-total { color: var(--destaque); font-weight: 700; font-size: 1.05rem; }
+.sel-bar .btn { white-space: nowrap; }
+body.tem-selecao { padding-bottom: 88px; }
+
+/* No celular a barra vira duas linhas: resumo + "limpar" em cima,
+   botão do WhatsApp ocupando a largura toda embaixo. */
+@media (max-width: 480px) {
+  .sel-bar { flex-wrap: wrap; row-gap: 10px; padding-left: 12px; padding-right: 12px; }
+  .sel-info { flex: 1 1 auto; min-width: 0; }
+  #sel-limpar { order: 2; }
+  #sel-link { order: 3; flex: 1 1 100%; }
+  body.tem-selecao { padding-bottom: 148px; }
+}
+
+/* --- Botão de copiar link dentro do modal -------------------------------- */
+.btn-copiar-link { margin-top: 10px; }
+.btn-copiar-link.copiado { border-color: var(--whatsapp); color: var(--whatsapp); }
+
+/* --- Respeita quem pediu menos animação --------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .card.entrando { animation: none; }
+  .card-img-wrapper img.com-fade { opacity: 1; }
+  .sel-bar { transition: none; }
+  * { scroll-behavior: auto !important; }
+}

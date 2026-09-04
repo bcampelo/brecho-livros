@@ -5,15 +5,26 @@
 // Placeholder SVG em data URI para imagens ausentes ou quebradas
 const SVG_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="100%" height="100%" fill="%231C1C21"/><path d="M120 160h60v80h-60z" fill="%2326262B"/><text x="150" y="210" fill="%2371717A" font-family="sans-serif" font-size="16" text-anchor="middle" dominant-baseline="middle">Sem foto</text></svg>`;
 
+// Quantos dias um item continua com o selo NOVO (contando do campo "adicionadoEm")
+const DIAS_NOVIDADE = 21;
+
+// Textos padrão do pedido com vários itens.
+// Se você quiser mudar, é só criar essas chaves dentro do CONFIG no data.js.
+const MSG_SELECAO_ABERTURA = "Olá, tenho interesse nestes livros:";
+const MSG_SELECAO_TOTAL = "Total";
+
 // Estado da Aplicação
 const state = {
   search: "",
   tipo: "tudo", // tudo, livro, box
   estados: [], // array de estados selecionados
   preco: "todos", // todos, ate20, 20a50, 50a100, acima100
-  ordem: "padrao",
-  ocultarVendidos: true
+  ordem: "padrao", // padrao, menor-preco, maior-preco, az, recentes
+  ocultarVendidos: true,
+  selecionados: new Set() // ids marcados para o pedido em lote
 };
+
+let primeiraRenderizacao = true;
 
 // ============================================================================
 // INICIALIZAÇÃO
@@ -22,7 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
   preencherConfiguracoesUI();
   gerarChipsEstado();
   configurarEventosFiltros();
+  configurarSelecao();
   updateGrid();
+  abrirItemDaUrl();
 });
 
 function preencherConfiguracoesUI() {
@@ -199,6 +212,32 @@ function imgErrorHandler(img) {
   img.src = SVG_PLACEHOLDER;
 }
 
+// Faz a foto aparecer com fade assim que carrega (inclusive se já veio do cache).
+function prepararFadeDaImagem(img) {
+  if (!img) return;
+  img.classList.add("com-fade");
+  const marcar = () => img.classList.add("carregada");
+  if (img.complete && img.naturalWidth > 0) marcar();
+  else img.addEventListener("load", marcar, { once: true });
+}
+
+function precoDoItem(item) {
+  return item.tipo === "box" ? item.precoConjunto : item.preco;
+}
+
+// Data de entrada no acervo. Campo opcional: adicionadoEm: "2026-09-15"
+function dataDoItem(item) {
+  if (!item.adicionadoEm) return null;
+  const d = new Date(item.adicionadoEm + "T12:00:00");
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function ehNovidade(item) {
+  const d = dataDoItem(item);
+  if (!d || item.vendido) return false;
+  return (Date.now() - d.getTime()) / 86400000 <= DIAS_NOVIDADE;
+}
+
 function updateGrid() {
   const grid = document.getElementById("grid-vitrine");
   const emptyState = document.getElementById("empty-state");
@@ -215,6 +254,15 @@ function updateGrid() {
     resultados.sort((a, b) => (b.tipo === "box" ? b.precoConjunto : b.preco) - (a.tipo === "box" ? a.precoConjunto : a.preco));
   } else if (state.ordem === "az") {
     resultados.sort((a, b) => a.titulo.localeCompare(b.titulo));
+  } else if (state.ordem === "recentes") {
+    // Itens sem data de entrada vão para o fim da lista.
+    resultados.sort((a, b) => {
+      const da = dataDoItem(a), db = dataDoItem(b);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return db - da;
+    });
   }
 
   // Visibilidade Limpar Filtros
@@ -244,26 +292,33 @@ function updateGrid() {
   grid.style.display = "grid";
   emptyState.style.display = "none";
 
-  resultados.forEach(item => {
+  resultados.forEach((item, indice) => {
+    const selecionado = state.selecionados.has(item.id);
     const card = document.createElement("article");
-    card.className = `card ${item.vendido ? "vendido" : ""}`;
+    card.className = `card ${item.vendido ? "vendido" : ""} ${selecionado ? "selecionado" : ""}`;
     card.setAttribute("role", "button");
     card.setAttribute("tabindex", "0");
     card.dataset.id = item.id;
-    
+    // Usado para escalonar a entrada dos cards (só nos 14 primeiros, para não demorar).
+    card.style.setProperty("--i", Math.min(indice, 14));
+    if (primeiraRenderizacao) card.classList.add("entrando");
+
     // Tratamento de clique e teclado
     card.addEventListener("click", () => openModal(item));
     card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openModal(item); }});
 
     const estadoObj = ESTADOS[item.estado] || ESTADOS["bom"];
     const imgSrc = item.imagem || SVG_PLACEHOLDER;
-    
+    const novo = ehNovidade(item);
+
     let html = `
       <div class="card-img-wrapper">
         <img src="${imgSrc}" alt="Capa de ${item.titulo}" loading="lazy" decoding="async">
         ${item.vendido ? '<div class="selo-vendido">VENDIDO</div>' : ''}
         ${item.tipo === "box" ? `<div class="badge-tipo">📚 BOX · ${item.itens ? item.itens.length : 0} livros</div>` : ''}
         <div class="badge-estado" style="color: ${estadoObj.cor}; border-color: ${estadoObj.cor};">${estadoObj.rotulo}</div>
+        ${novo ? '<div class="badge-novo">NOVO</div>' : ''}
+        ${item.vendido ? '' : `<button class="btn-selecionar" type="button" aria-pressed="${selecionado}" aria-label="${selecionado ? 'Tirar' : 'Adicionar'} ${item.titulo} do pedido" title="Adicionar ao pedido">${selecionado ? '✓' : '+'}</button>`}
       </div>
       <div class="card-content">
         <h3 class="card-title">${item.titulo}</h3>
@@ -289,11 +344,136 @@ function updateGrid() {
 
     html += `</div></div>`;
     card.innerHTML = html;
+
     // O placeholder é um data:URI com aspas, então o onerror é ligado aqui e não no HTML.
     const cardImg = card.querySelector("img");
     if (cardImg) cardImg.onerror = function () { imgErrorHandler(this); };
+    prepararFadeDaImagem(cardImg);
+
+    // Botão de seleção: não pode abrir o modal junto.
+    const btnSel = card.querySelector(".btn-selecionar");
+    if (btnSel) {
+      btnSel.addEventListener("click", (e) => {
+        e.stopPropagation();
+        alternarSelecao(item.id);
+      });
+    }
+
     grid.appendChild(card);
   });
+
+  primeiraRenderizacao = false;
+}
+
+// ============================================================================
+// SELEÇÃO DE VÁRIOS ITENS (pedido em lote pelo WhatsApp)
+// ============================================================================
+function configurarSelecao() {
+  document.getElementById("sel-limpar").addEventListener("click", () => {
+    state.selecionados.clear();
+    updateGrid();
+    atualizarBarraSelecao();
+  });
+  atualizarBarraSelecao();
+}
+
+function alternarSelecao(id) {
+  if (state.selecionados.has(id)) state.selecionados.delete(id);
+  else state.selecionados.add(id);
+
+  // Atualiza só o card mexido, para não recarregar a grade inteira.
+  const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+  if (card) {
+    const ativo = state.selecionados.has(id);
+    card.classList.toggle("selecionado", ativo);
+    const btn = card.querySelector(".btn-selecionar");
+    if (btn) {
+      btn.textContent = ativo ? "✓" : "+";
+      btn.setAttribute("aria-pressed", String(ativo));
+    }
+  }
+  atualizarBarraSelecao();
+}
+
+function itensSelecionados() {
+  return ACERVO.filter(i => state.selecionados.has(i.id));
+}
+
+function mensagemDaSelecao(itens) {
+  const abertura = CONFIG.mensagemSelecao || MSG_SELECAO_ABERTURA;
+  const linhas = itens.map(i => `• ${i.titulo} — ${formatCurrency(precoDoItem(i))}`);
+  const total = itens.reduce((s, i) => s + (precoDoItem(i) || 0), 0);
+  return `${abertura}\n\n${linhas.join("\n")}\n\n${MSG_SELECAO_TOTAL}: ${formatCurrency(total)}`;
+}
+
+function atualizarBarraSelecao() {
+  const barra = document.getElementById("sel-bar");
+  const itens = itensSelecionados();
+
+  if (itens.length === 0) {
+    barra.classList.remove("ativa");
+    document.body.classList.remove("tem-selecao");
+    return;
+  }
+
+  const total = itens.reduce((s, i) => s + (precoDoItem(i) || 0), 0);
+  document.getElementById("sel-qtd").textContent =
+    `${itens.length} ${itens.length === 1 ? "item selecionado" : "itens selecionados"}`;
+  document.getElementById("sel-total").textContent = formatCurrency(total);
+  document.getElementById("sel-link").href = linkWhatsApp(mensagemDaSelecao(itens));
+
+  barra.classList.add("ativa");
+  document.body.classList.add("tem-selecao");
+}
+
+// ============================================================================
+// LINK DIRETO PARA UM ITEM  (?livro=id)
+// ============================================================================
+function urlDoItem(id) {
+  const u = new URL(window.location.href);
+  u.search = "?livro=" + encodeURIComponent(id);
+  u.hash = "";
+  return u.toString();
+}
+
+// O protocolo file:// não aceita history.pushState com query string.
+function podeUsarHistorico() {
+  return window.location.protocol !== "file:";
+}
+
+function abrirItemDaUrl() {
+  const id = new URLSearchParams(window.location.search).get("livro");
+  if (!id) return;
+  const item = ACERVO.find(i => i.id === id);
+  if (!item) return;
+  if (podeUsarHistorico()) {
+    try { history.replaceState({ livro: id }, "", urlDoItem(id)); } catch (e) { /* ignora */ }
+  }
+  openModal(item, true);
+}
+
+async function copiarTexto(texto) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch (e) { /* cai no plano B */ }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = texto;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 // ============================================================================
@@ -307,10 +487,24 @@ function linkWhatsApp(mensagem) {
 // MODAL
 // ============================================================================
 let elementoFocoAnterior = null;
+let itemAberto = null;
+let modalEmpilhouUrl = false;
 
-function openModal(item) {
+function openModal(item, viaHistorico = false) {
   elementoFocoAnterior = document.activeElement;
-  
+  itemAberto = item;
+
+  // Coloca ?livro=id na barra de endereços, para poder compartilhar o link direto.
+  // Como é um pushState, o botão "voltar" do celular fecha o modal em vez de sair do site.
+  if (!viaHistorico && podeUsarHistorico()) {
+    try {
+      history.pushState({ livro: item.id }, "", urlDoItem(item.id));
+      modalEmpilhouUrl = true;
+    } catch (e) {
+      modalEmpilhouUrl = false;
+    }
+  }
+
   const backdrop = document.getElementById("modal-backdrop");
   const dialog = document.getElementById("modal-dialog");
   
@@ -361,6 +555,22 @@ function openModal(item) {
     const textoBtn = item.tipo === "box" ? "Quero o box completo" : "Tenho interesse";
     actionArea.innerHTML = `<a href="${linkWhatsApp(msg)}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-large">${textoBtn}</a>`;
   }
+
+  // Botão de copiar o link direto deste item
+  const btnCopiar = document.createElement("button");
+  btnCopiar.type = "button";
+  btnCopiar.className = "btn btn-secondary btn-large btn-copiar-link";
+  btnCopiar.textContent = "Copiar link deste item";
+  btnCopiar.addEventListener("click", async () => {
+    const ok = await copiarTexto(urlDoItem(item.id));
+    btnCopiar.textContent = ok ? "Link copiado ✓" : "Não consegui copiar";
+    btnCopiar.classList.toggle("copiado", ok);
+    setTimeout(() => {
+      btnCopiar.textContent = "Copiar link deste item";
+      btnCopiar.classList.remove("copiado");
+    }, 2000);
+  });
+  actionArea.appendChild(btnCopiar);
 
   // Specs
   const specsDiv = document.getElementById("modal-specs");
@@ -449,11 +659,35 @@ function openModal(item) {
 }
 
 function closeModal() {
+  // Se o modal empilhou uma URL, voltar no histórico é quem fecha de fato
+  // (assim o botão "voltar" do celular e o X fazem a mesma coisa).
+  if (modalEmpilhouUrl) {
+    modalEmpilhouUrl = false;
+    history.back();
+    return;
+  }
+  fecharModalDeFato();
+}
+
+function fecharModalDeFato() {
   const backdrop = document.getElementById("modal-backdrop");
+  if (!backdrop.classList.contains("open")) return;
   backdrop.classList.remove("open");
   document.body.style.overflow = "";
+  itemAberto = null;
   if (elementoFocoAnterior) elementoFocoAnterior.focus();
 }
+
+// Voltar/avançar do navegador controlam a abertura do modal.
+window.addEventListener("popstate", (e) => {
+  modalEmpilhouUrl = false;
+  fecharModalDeFato();
+  const id = e.state && e.state.livro;
+  if (id) {
+    const item = ACERVO.find(i => i.id === id);
+    if (item) openModal(item, true);
+  }
+});
 
 // Eventos do Modal
 document.getElementById("modal-close").addEventListener("click", closeModal);

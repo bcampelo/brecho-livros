@@ -76,6 +76,7 @@
       <div class="filter-group">
         <select id="filter-ordem" aria-label="Ordenação">
           <option value="padrao">Padrão</option>
+          <option value="recentes">Recém-chegados</option>
           <option value="menor-preco">Menor preço</option>
           <option value="maior-preco">Maior preço</option>
           <option value="az">Título (A–Z)</option>
@@ -120,6 +121,18 @@
     </a>
     <p class="footer-note">Vitrine pessoal · fotos reais dos exemplares</p>
   </footer>
+
+  <!-- Barra de seleção (aparece quando o visitante marca itens com o botão "+") -->
+  <div id="sel-bar" class="sel-bar" role="region" aria-label="Itens selecionados">
+    <div class="sel-info">
+      <strong id="sel-qtd">0 itens selecionados</strong>
+      <span id="sel-total" class="sel-total">R$ 0,00</span>
+    </div>
+    <button id="sel-limpar" type="button" class="btn-text">Limpar</button>
+    <a id="sel-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
+      Pedir pelo WhatsApp
+    </a>
+  </div>
 
   <!-- Modal de Detalhes -->
   <div id="modal-backdrop" class="modal-backdrop" aria-hidden="true">
